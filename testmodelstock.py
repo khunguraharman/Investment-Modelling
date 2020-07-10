@@ -26,7 +26,7 @@ history_df = history_df.reindex(index=history_df.index[::-1])  # invert order of
 history_df = history_df.reset_index(drop=True)  # re-create indices, starting from 0 without keeping old
 history_df['Date'] = pd.to_datetime(history_df['Date'])
 history_df['unix'] = history_df['Date'].astype('int64') / 10**9
-# history_df.to_pickle(ticker + '_prices.pkl')
+#history_df.to_pickle(ticker + '_prices.pkl')
 
 
 # ensure correct dates in data frames
@@ -34,12 +34,15 @@ quarter_dates = qis_df['unix'].astype('float64')  # most recent to oldest quarte
 history_df = pd.read_pickle(ticker + '_prices.pkl')  # un-serialize price history
 oldest_quarter_date = quarter_dates.iloc[-1]
 oldest_price_date = history_df['unix'].iloc[-1]
+# print(quarter_dates-86400)
+# print(history_df['unix'])
 if oldest_quarter_date < oldest_price_date:  # price data does not go far back enough
-    trim_date = quarter_dates.iloc[-2]  # won't need prices before this date
-    trim_index = history_df['unix'].index(history_df['unix'] == trim_date)  # price index of older quarter date
+    trim_date = quarter_dates.iloc[-2]-86400  # won't need prices before this date
+    trim_index = history_df['unix'].index(trim_date)  # price index of older quarter date
     # history_df = history_df.drop(history_df.index[trim_index:-1])  # trim price df
     print(trim_date)
     print(trim_index)
+
 
 
 
