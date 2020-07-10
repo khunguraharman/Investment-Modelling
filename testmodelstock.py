@@ -14,49 +14,50 @@ qis_df = pd.read_pickle(ticker + '_qis.pkl')  # un-serialize data
 bs_df = pd.read_pickle(ticker + '_bs.pkl')
 cf_df = pd.read_pickle(ticker + '_cf.pkl')
 qis_df['fillingDate'] = pd.to_datetime(qis_df['fillingDate'])
-print(qis_df['date'])
-# last_row = qis_df.shape[0] - 1  # index of the last row obtained from a tuple
-#
-# oldest = qis_df.loc[last_row, 'date']  # the oldest dated quarter
-# latest = qis_df.loc[0, 'date']  # the latest dated quarter
-#
-# # get historical market data
-# company = yf.Ticker(ticker)  # get company info
-# history_df = company.history(interval='1d', start=oldest, end=latest)
-# history_df = history_df.reset_index()  # create indices
-# history_df = history_df.reindex(index=history_df.index[::-1])  # invert order of rows
-# history_df = history_df.reset_index(drop=True)  # re-create indices, starting from 0 without keeping old
-# history_df['Date'] = pd.to_datetime(history_df['Date'])
-# history_df['unix_q'] = history_df['Date'].astype('int64') / 10**9
-# #history_df.to_pickle(ticker + '_prices.pkl')
-#
-# # ensure correct dates in data frames
-# quarter_dates = qis_df['unix'].astype('float64')  # most recent to oldest quarterly dates
-# history_df = pd.read_pickle(ticker + '_prices.pkl')  # un-serialize price history
-# quarter_trim_index = -1
-# oldest_quarter_date = quarter_dates.iloc[quarter_trim_index]-86400  # time for last trading day before quarter end
-# oldest_price_date = history_df['unix_q'].iloc[quarter_trim_index]
-# print(qis_df)
-#
-# while oldest_quarter_date < oldest_price_date:  # price data does not go far back enough
-#     quarter_trim_index = quarter_trim_index - 1  # want a more recent quarter
-#     oldest_quarter_date = quarter_dates.iloc[quarter_trim_index]-86400  # need oldest quarter to be more recent
-#
-# if quarter_trim_index < -1:  # trim financial data if oldest quarter is not recent enough
-#     quarter_trim_index = quarter_trim_index + 1
-#     qis_df = qis_df[:len(quarter_dates) + quarter_trim_index]
-#     bs_df = bs_df[:len(quarter_dates) + quarter_trim_index]
-#     cf_df = cf_df[:len(quarter_dates) + quarter_trim_index]
-#
-# # drop pricing data before oldest fillingDate
-# start_price_Data = qis_df['unix_filling'][-1] + 86400
-# price_trim_index = qis_df['unix_filling'].values.tolist()
-# price_trim_index = price_trim_index.index[price_trim_index == start_price_Data]
-# # price_dates = history_df['unix'].values.tolist()
-# # trim_index = price_dates.index(trim_date)  # price index of older quarter date
-# # history_df = history_df.drop(history_df.index[trim_index:-1])  # trim price df
-# # print(history_df)
-# print(price_trim_index)
+bs_df['fillingDate'] = pd.to_datetime(bs_df['fillingDate'])
+cf_df['fillingDate'] = pd.to_datetime(cf_df['fillingDate'])
+
+oldest = qis_df['date'].iloc[-1]
+latest = qis_df['date'].iloc[0]  # the latest dated quarter
+
+# get historical market data
+company = yf.Ticker(ticker)  # get company info
+history_df = company.history(interval='1d', start=oldest, end=latest)
+history_df = history_df.reset_index()  # create indices
+history_df = history_df.reindex(index=history_df.index[::-1])  # invert order of rows
+history_df = history_df.reset_index(drop=True)  # re-create indices, starting from 0 without keeping old
+history_df['Date'] = pd.to_datetime(history_df['Date'])
+history_df['unix'] = history_df['Date'].astype('int64') / 10**9
+#history_df.to_pickle(ticker + '_prices.pkl')
+
+# ensure correct dates in data frames
+quarter_dates = qis_df['unix_q'].astype('float64')  # most recent to oldest quarterly dates
+history_df = pd.read_pickle(ticker + '_prices.pkl')  # un-serialize price history
+quarter_trim_index = -1
+oldest_quarter_date = quarter_dates.iloc[quarter_trim_index]-86400  # time for last trading day before quarter end
+oldest_price_date = history_df['unix'].iloc[quarter_trim_index]
+
+
+while oldest_quarter_date < oldest_price_date:  # price data does not go far back enough
+    quarter_trim_index = quarter_trim_index - 1  # want a more recent quarter
+    oldest_quarter_date = quarter_dates.iloc[quarter_trim_index]-86400  # need oldest quarter to be more recent
+
+if quarter_trim_index < -1:  # trim financial data if oldest quarter is not recent enough
+    quarter_trim_index = quarter_trim_index + 1
+    qis_df = qis_df[:len(quarter_dates) + quarter_trim_index]
+    bs_df = bs_df[:len(quarter_dates) + quarter_trim_index]
+    cf_df = cf_df[:len(quarter_dates) + quarter_trim_index]
+
+# drop pricing data before oldest fillingDate
+start_price_Data = qis_df['unix_filling'].iloc[-1]
+price_trim_index = history_df['unix'].values.tolist()
+price_trim_index = price_trim_index.index(start_price_Data)
+
+# price_dates = history_df['unix'].values.tolist()
+# trim_index = price_dates.index(trim_date)  # price index of older quarter date
+# history_df = history_df.drop(history_df.index[trim_index:-1])  # trim price df
+# print(history_df)
+
 
 
 
