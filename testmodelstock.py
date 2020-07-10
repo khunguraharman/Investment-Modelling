@@ -52,6 +52,10 @@ if quarter_trim_index < -1:  # trim financial data if oldest quarter is not rece
 start_price_Data = qis_df['unix_filling'].iloc[-1]
 price_trim_index = history_df['unix'].values.tolist()
 price_trim_index = price_trim_index.index(start_price_Data)
+print(price_trim_index)
+history_df = history_df[:price_trim_index+1]
+print(history_df['Date'].iloc[-1])
+print(qis_df['fillingDate'].iloc[-1])
 
 # price_dates = history_df['unix'].values.tolist()
 # trim_index = price_dates.index(trim_date)  # price index of older quarter date
