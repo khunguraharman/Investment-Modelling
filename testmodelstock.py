@@ -48,19 +48,29 @@ if quarter_trim_index < -1:  # trim financial data if oldest quarter is not rece
     bs_df = bs_df[:len(quarter_dates) + quarter_trim_index]
     cf_df = cf_df[:len(quarter_dates) + quarter_trim_index]
 
-# drop pricing data before oldest fillingDate
-start_price_Data = qis_df['unix_filling'].iloc[-1]
-price_trim_index = history_df['unix'].values.tolist()
-price_trim_index = price_trim_index.index(start_price_Data)
-print(price_trim_index)
-history_df = history_df[:price_trim_index+1]
-print(history_df['Date'].iloc[-1])
-print(qis_df['fillingDate'].iloc[-1])
+earnings_releases = qis_df['unix_filling']
+sp_dates = history_df['unix'].values.tolist()
+k = 1
 
-# price_dates = history_df['unix'].values.tolist()
-# trim_index = price_dates.index(trim_date)  # price index of older quarter date
-# history_df = history_df.drop(history_df.index[trim_index:-1])  # trim price df
-# print(history_df)
+for earnings_release in earnings_releases:
+    starting_date = earnings_releases[k]
+    end_date = earnings_release
+    start_index = sp_dates.index(starting_date)
+    end_index = sp_dates.index(end_date)
+    stock_prices = history_df[end_index:start_index+1]
+
+
+# # drop pricing data before oldest fillingDate
+# start_price_Data = qis_df['unix_filling'].iloc[-1]
+# price_trim_index = history_df['unix'].values.tolist()
+# price_trim_index = price_trim_index.index(start_price_Data)
+# history_df = history_df[:price_trim_index+1]
+#
+# # focus on pricing data between fillings
+# end_of_price_period = qis_df['unix_filling'].iloc[-2]
+# end_of_price_index = history_df['unix'].values.tolist()
+# end_of_price_index = end_of_price_index.index(end_of_price_period)
+# Price_data = history_df[end_of_price_index:]
 
 
 
