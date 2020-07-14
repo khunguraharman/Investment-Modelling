@@ -69,6 +69,9 @@ trading_days = history_df['Date'].apply(lambda x: x.strftime('%Y-%m-%d'))
 trading_days = trading_days.values.tolist()
 k = 1
 k_max = len(earnings_releases)
+prices = history_df.drop(['Date', 'Volume', 'Dividends', 'Stock Splits'], axis=1)
+capital_exchange = history_df.drop(['Date', 'Open', 'High', 'Low', 'Close'], axis=1)
+capital_exchange['Stock Multiple'] = capital_exchange['Stock Splits'].map(stock_multiplier)  # adjust for stock splits
 
 for earnings_release in earnings_releases:
     if k+2 <= k_max:
@@ -77,11 +80,12 @@ for earnings_release in earnings_releases:
         start_index = trading_days.index(starting_date)
         end_index = trading_days.index(end_date)
         shares_start_of_quarter = qis_df['weightedAverageShsOutDil'].iloc[k]  # number of shares is previous quarter
-        trading_range = history_df[end_index:start_index+1]  # data frame of relevant pricing data
-        trading_range['Market Cap Correction'] = trading_range['Stock Splits'].map(stock_multiplier)  # new column for stock split corrections
-        trading_range['Closing Market Cap'] = trading_range['Close'].mul(shares_start_of_quarter*trading_range['Market Cap Correction'])
-        average = trading_range['Closing Market Cap'].mean()
-        print(trading_range)
+        price_range = prices[end_index:start_index+1]  # data frame of relevant pricing data
+        capital_range = capital_exchange[end_index:start_index+1]
+        market_caps = price_range.mul(shares_start_of_quarter*capital_range['Stock Multiple'], axis=0)
+        market_caps['Date'] = history_df['Date'][end_index:start_index+1]
+        #average = trading_range['Closing Market Cap'].mean()
+        print(market_caps.head())
         k = k+1
     else:
         break
