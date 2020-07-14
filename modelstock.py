@@ -1,10 +1,25 @@
 from urllib.request import urlopen
 import json
-import pandas as pd
 import numpy as np
 import yfinance as yf
 import time
 from datetime import date
+import pandas as pd
+pd.options.mode.chained_assignment = None  # default='warn'
+
+
+def stock_multiplier(stock_split):
+    if stock_split == 0:
+        stock_multiple = 1
+    else:
+        stock_multiple = stock_split
+    return stock_multiple
+
+
+def calc_mrktcap(closing_price, shares, correction):
+    marketcap = closing_price*shares*correction
+    return marketcap
+
 
 # companies = ["AAPL", "MSFT", "IBM", "V", "MA", "GOOGL", "TSLA", "NVDA", "INTC", "AMD", "AMZN", "UBER", "LYFT"]
 ticker = 'AAPL'
@@ -48,16 +63,32 @@ if quarter_trim_index < -1:  # trim financial data if oldest quarter is not rece
     bs_df = bs_df[:len(quarter_dates) + quarter_trim_index]
     cf_df = cf_df[:len(quarter_dates) + quarter_trim_index]
 
-earnings_releases = qis_df['unix_filling']
-sp_dates = history_df['unix'].values.tolist()
+qis_df['Avg. MrktCap'] = qis_df['date']
+earnings_releases = qis_df['date']
+sp_dates = history_df['Date'].values.tolist()
 k = 1
 
-for earnings_release in earnings_releases:
-    starting_date = earnings_releases[k]
-    end_date = earnings_release
-    start_index = sp_dates.index(starting_date)
-    end_index = sp_dates.index(end_date)
-    stock_prices = history_df[end_index:start_index+1]
+print(sp_dates[0:5])
+print(earnings_releases[0:5])
+
+# test = history_df[3:8]
+# test['Correction'] = test['Stock Splits'].map(stock_multiplier)
+# print(test['Correction'])
+
+# for earnings_release in earnings_releases:
+#     starting_date = earnings_releases.iloc[k]  # the earnings release date of previous quarter
+#     end_date = earnings_release  # release date of next quarter's earnings
+#     print(end_date)
+#     start_index = sp_dates.index(starting_date)
+#     end_index = sp_dates.index(end_date)
+#     shares_start_of_quarter = qis_df['weightedAverageShsOutDil'].iloc[k]  # number of shares is previous quarter
+#     trading_days = history_df[end_index:start_index+1]  # data frame of relevant pricing data
+#     trading_days['Market Cap Correction'] = trading_days['Stock Splits'].map(stock_multiplier)  # new column for stock split corrections
+#     trading_days['Closing Market Cap'] = trading_days['Close'].mul(shares_start_of_quarter*trading_days['Market Cap Correction'])
+#     # average = trading_days['Closing Market Cap'].mean(axis=1)
+#     print(trading_days['Closing Market Cap'])
+#     k = k+1
+
 
 # # drop pricing data before oldest fillingDate
 # start_price_Data = qis_df['unix_filling'].iloc[-1]

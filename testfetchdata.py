@@ -12,19 +12,17 @@ def get_jsonparsed_data(url):  # receive content of the URL, parse is as JSON an
 
 ticker = 'AAPL'
 
-qis_url = 'https://financialmodelingprep.com/api/v3/income-statement/' + ticker + '?period=quarter&apikey=70124da85f91e1ce31693de7f16ae1f4'
+qis_url = 'https://financialmodelingprep.com/api/v3/income-statement/' + ticker + '?period=quarter&apikey=c8cd456174e73a2fc87b2ec7bb4744f6'
 qis_dict = get_jsonparsed_data(qis_url)  # dictionary of quarterly incomes statements
 
 qis_df = pd.DataFrame(data=qis_dict)
-qis_df = qis_df.drop(['symbol', 'fillingDate', 'acceptedDate', 'period', 'link', 'finalLink'], axis=1)
-qis_df['date'] = pd.to_datetime(qis_df['date'])
-qis_df['unix'] = qis_df['date'].astype('int64') / 10**9
-#qis_df['unix'] = qis_df['unix'].floordiv(10**9)
-cols = qis_df.columns.drop('date')   # pick every column except for date
+qis_df = qis_df.drop(['symbol', 'acceptedDate', 'period', 'link', 'finalLink'], axis=1)
+
+cols = qis_df.columns.drop(['date', 'fillingDate'])   # pick every column except for date
 qis_df[cols] = qis_df[cols].apply(pd.to_numeric, errors='coerce')
-#qis_df.to_pickle(ticker + '_qis.pkl')
-print(qis_df['date'].head())
-print(qis_df['unix'].head())
+qis_df.to_pickle(ticker + '_qis.pkl')
+
+
 
 # qis_df = pd.read_pickle(ticker + '_qis.pkl')
 # bs_df = pd.read_pickle(ticker + '_bs.pkl')

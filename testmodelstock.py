@@ -28,12 +28,11 @@ ticker = 'AAPL'
 qis_df = pd.read_pickle(ticker + '_qis.pkl')  # un-serialize data
 bs_df = pd.read_pickle(ticker + '_bs.pkl')
 cf_df = pd.read_pickle(ticker + '_cf.pkl')
-qis_df['fillingDate'] = pd.to_datetime(qis_df['fillingDate'])
-bs_df['fillingDate'] = pd.to_datetime(bs_df['fillingDate'])
-cf_df['fillingDate'] = pd.to_datetime(cf_df['fillingDate'])
+
 
 oldest = qis_df['date'].iloc[-1]
 latest = qis_df['date'].iloc[0]  # the latest dated quarter
+
 
 # get historical market data
 company = yf.Ticker(ticker)  # get company info
@@ -41,33 +40,50 @@ history_df = company.history(interval='1d', start=oldest, end=latest)
 history_df = history_df.reset_index()  # create indices
 history_df = history_df.reindex(index=history_df.index[::-1])  # invert order of rows
 history_df = history_df.reset_index(drop=True)  # re-create indices, starting from 0 without keeping old
-history_df['Date'] = pd.to_datetime(history_df['Date'])
-history_df['unix'] = history_df['Date'].astype('int64') / 10**9
-#history_df.to_pickle(ticker + '_prices.pkl')
+history_df.to_pickle(ticker + '_prices.pkl')
+history_df = pd.read_pickle(ticker + '_prices.pkl')  # un-serialize price history
+
 
 # ensure correct dates in data frames
-quarter_dates = qis_df['unix_q'].astype('float64')  # most recent to oldest quarterly dates
-history_df = pd.read_pickle(ticker + '_prices.pkl')  # un-serialize price history
+quarter_dates = pd.to_datetime(qis_df['date'])  # most recent to oldest quarterly dates
+unix_qis = pd.to_datetime(qis_df['date']).astype('int64') / 10**9
+unix_bs = pd.to_datetime(bs_df['date']).astype('int64') / 10**9
+unix_cf = pd.to_datetime(cf_df['date']).astype('int64') / 10**9
+unix_pd = history_df['Date'].astype('int64') / 10**9
+
 quarter_trim_index = -1
-oldest_quarter_date = quarter_dates.iloc[quarter_trim_index]-86400  # time for last trading day before quarter end
-oldest_price_date = history_df['unix'].iloc[quarter_trim_index]
+oldest_qis = unix_qis.iloc[quarter_trim_index]  # time for last trading day before quarter end
+oldest_bs = unix_bs.iloc[quarter_trim_index]  # time for last trading day before quarter end
+oldest_cf = unix_cf.iloc[quarter_trim_index]  # time for last trading day before quarter end
+oldest_pdata = unix_pd.iloc[quarter_trim_index]  # already datetime64
+
+oldest = {"bs": oldest_bs, "cf": oldest_cf, "qis": oldest_qis}
+key_list = list(oldest.keys())
+val_list = list(oldest.values())
+limiting_doc = max(oldest)
+limit = oldest.get(max(oldest))
+print(limit)
+print(limiting_doc)
 
 
-while oldest_quarter_date < oldest_price_date:  # price data does not go far back enough
-    quarter_trim_index = quarter_trim_index - 1  # want a more recent quarter
-    oldest_quarter_date = quarter_dates.iloc[quarter_trim_index]-86400  # need oldest quarter to be more recent
-
-if quarter_trim_index < -1:  # trim financial data if oldest quarter is not recent enough
-    quarter_trim_index = quarter_trim_index + 1
-    qis_df = qis_df[:len(quarter_dates) + quarter_trim_index]
-    bs_df = bs_df[:len(quarter_dates) + quarter_trim_index]
-    cf_df = cf_df[:len(quarter_dates) + quarter_trim_index]
-
-qis_df['Avg. MrktCap'] = qis_df['date']
-# earnings_releases = qis_df['unix_filling']
-# sp_dates = history_df['unix'].values.tolist()
+# while limit < oldest_pdata:  # price data does not go far back enough
+#     quarter_trim_index = quarter_trim_index - 1  # want a more recent quarter
+#     limit = unix_qd.iloc[quarter_trim_index]  # need oldest quarter to be more recent
+#
+# if quarter_trim_index < -1:  # trim financial data if oldest quarter is not recent enough
+#     quarter_trim_index = quarter_trim_index + 1
+#     qis_df = qis_df[:len(quarter_dates) + quarter_trim_index]
+#     bs_df = bs_df[:len(quarter_dates) + quarter_trim_index]
+#     cf_df = cf_df[:len(quarter_dates) + quarter_trim_index]
+# #
+# qis_df['Avg. MrktCap'] = qis_df['date']
+# earnings_releases = qis_df['date']
+# sp_dates = history_df['Date'].values.tolist()
 # k = 1
-print[qis_df]
+#
+# print(sp_dates[0:5])
+# print(earnings_releases[0:5])
+
 # test = history_df[3:8]
 # test['Correction'] = test['Stock Splits'].map(stock_multiplier)
 # print(test['Correction'])
@@ -75,6 +91,7 @@ print[qis_df]
 # for earnings_release in earnings_releases:
 #     starting_date = earnings_releases.iloc[k]  # the earnings release date of previous quarter
 #     end_date = earnings_release  # release date of next quarter's earnings
+#     print(end_date)
 #     start_index = sp_dates.index(starting_date)
 #     end_index = sp_dates.index(end_date)
 #     shares_start_of_quarter = qis_df['weightedAverageShsOutDil'].iloc[k]  # number of shares is previous quarter
