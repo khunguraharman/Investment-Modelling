@@ -74,8 +74,9 @@ trading_evaluation = prices[:quarters + quarter_trim_index]
 trading_evaluation.iloc[0] = np.nan * trading_evaluation.shape[1]  # no data for most recent quarter
 capital_exchange = history_df.drop(['Open', 'High', 'Low', 'Close'], axis=1)
 capital_exchange['Stock Multiple'] = capital_exchange['Stock Splits'].map(stock_multiplier)  # adjust for stock splits
-#capital_exchange.loc[:, 'Dividends Paid'] = capital_exchange.loc[:, 'Dividends'].mul(5 * capital_exchange['Stock Multiple'], axis=0)
-# DATE = capital_exchange.loc[lambda x: x['Date'] == '8-9-2019']
+AvgVolume_TotalDividends = capital_exchange[:quarters + quarter_trim_index]
+AvgVolume_TotalDividends = AvgVolume_TotalDividends.drop(['Date', 'Stock Multiple', 'Stock Splits'], axis=1)
+AvgVolume_TotalDividends.iloc[0] = np.nan * AvgVolume_TotalDividends.shape[1]  # no data for most recent quarter
 
 for earnings_release in earnings_releases:
     if k+2 <= k_max:
@@ -90,9 +91,10 @@ for earnings_release in earnings_releases:
         price_averages = pd.DataFrame(market_caps.mean(axis=0)).T.values.tolist()  # returns a list of lists
         trading_evaluation.iloc[k] = price_averages[0]  # need [0] because averages is a list of lists
         capital_range.loc[:, 'Dividends Paid'] = capital_range.loc[:, 'Dividends'].mul(shares_start_of_quarter * capital_range['Stock Multiple'], axis=0)
-
+        AvgVolume_TotalDividends.loc[k, 'Volume'] = capital_range.loc[:, 'Volume'].mean(axis=0)
+        AvgVolume_TotalDividends.loc[k, 'Dividends'] = capital_range.loc[:, 'Dividends Paid'].sum()
         k = k+1
-
     else:
         break
 
+history_df = pd.read_pickle(ticker + '_prices.pkl')  # un-serialize price history
