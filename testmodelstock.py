@@ -72,8 +72,10 @@ k_max = len(earnings_releases)
 prices = history_df.drop(['Date', 'Volume', 'Dividends', 'Stock Splits'], axis=1)
 trading_evaluation = prices[:quarters + quarter_trim_index]
 trading_evaluation.iloc[0] = np.nan * trading_evaluation.shape[1]  # no data for most recent quarter
-capital_exchange = history_df.drop(['Date', 'Open', 'High', 'Low', 'Close'], axis=1)
+capital_exchange = history_df.drop(['Open', 'High', 'Low', 'Close'], axis=1)
 capital_exchange['Stock Multiple'] = capital_exchange['Stock Splits'].map(stock_multiplier)  # adjust for stock splits
+#capital_exchange.loc[:, 'Dividends Paid'] = capital_exchange.loc[:, 'Dividends'].mul(5 * capital_exchange['Stock Multiple'], axis=0)
+# DATE = capital_exchange.loc[lambda x: x['Date'] == '8-9-2019']
 
 for earnings_release in earnings_releases:
     if k+2 <= k_max:
@@ -87,58 +89,10 @@ for earnings_release in earnings_releases:
         market_caps = price_range.mul(shares_start_of_quarter*capital_range['Stock Multiple'], axis=0)
         price_averages = pd.DataFrame(market_caps.mean(axis=0)).T.values.tolist()  # returns a list of lists
         trading_evaluation.iloc[k] = price_averages[0]  # need [0] because averages is a list of lists
+        capital_range.loc[:, 'Dividends Paid'] = capital_range.loc[:, 'Dividends'].mul(shares_start_of_quarter * capital_range['Stock Multiple'], axis=0)
+
         k = k+1
 
     else:
         break
 
-
-# # drop pricing data before oldest fillingDate
-# start_price_Data = qis_df['unix_filling'].iloc[-1]
-# price_trim_index = history_df['unix'].values.tolist()
-# price_trim_index = price_trim_index.index(start_price_Data)
-# history_df = history_df[:price_trim_index+1]
-#
-# # focus on pricing data between fillings
-# end_of_price_period = qis_df['unix_filling'].iloc[-2]
-# end_of_price_index = history_df['unix'].values.tolist()
-# end_of_price_index = end_of_price_index.index(end_of_price_period)
-# Price_data = history_df[end_of_price_index:]
-
-# get moving average of closing prices
-#second_last_quarter_limit = quarter_dates.shape[0] - 2  # set second oldest quarter as a limit
-# # limit = quarter_dates.index[quarter_dates == quarter_dates.iloc[-2]][0]
-# for quarter_end_date in quarter_dates:
-#     quarter_end_index = quarter_dates.index[quarter_dates == quarter_end_date][0]  # index returns a list so pick 0th index of that list
-#     if quarter_end_index < second_last_quarter_limit:  # want to stop at second last index
-#         # end of quarter, want the price the day before financials are released
-#         # start of quarter
-#         quarter_start_index = quarter_end_index + 1  # quarter_dates goes from most recent to oldest
-#         quarter_start_day = quarter_dates.iloc[quarter_start_index]  # will start at the quarter before the latest one
-#
-#         # price indices
-#         price_end_index = history_df.index[history_df['Date'] == quarter_end_day][0]
-#         print(price_end_index)
-        # price_end_index = price_end_index[0] - 1  # day before results are released
-        # price_start_index = history_df.index[history_df['Date'] == quarter_start_day]
-        # price_start_index = price_start_index[0] + 1  # get price from the day after
-        # print(price_start_index)
-        # print(price_end_index)
-#
-#         # prices
-#         #quarter_price_history = history_df.iloc[price_end_index:price_start_index]
-#
-#         # avg_price = quarter_price_history.mean()
-#
-#
-#
-# # end_of_q =
-# # closing_avg =
-#
-#
-#
-# # # calculate useful ratios
-# # price_df['marketCap'] = price_df['Close']*qis_df['Shares']
-# # book_value = bs_df['Total assets'] - bs_df['Total liabilities']
-# # price_book_ratio = price_df['marketCap']/book_value
-# # print(price_book_ratio)
