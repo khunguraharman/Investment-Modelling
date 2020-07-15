@@ -3,7 +3,9 @@ import json
 import pandas as pd
 import numpy as np
 from datetime import date
+import yfinance as yf
 import datetime as dt
+pd.options.mode.chained_assignment = None  # default='warn'
 
 
 def get_jsonparsed_data(url):  # recieve content of the URL, parse is as JSON and return a dictionary
@@ -11,6 +13,13 @@ def get_jsonparsed_data(url):  # recieve content of the URL, parse is as JSON an
     data = response.read().decode("utf-8")
     return json.loads(data)
 
+
+def stock_multiplier(stock_split):
+    if stock_split == 0:
+        stock_multiple = 1
+    else:
+        stock_multiple = stock_split
+    return stock_multiple
 
 companies = ["AAPL"]  #, "MSFT", "IBM", "V", "MA", "GOOGL", "TSLA", "NVDA", "INTC", "AMD", "AMZN", "UBER", "LYFT"]
 
@@ -21,7 +30,7 @@ for ticker in companies:
     qis_df = qis_df.drop(['symbol', 'acceptedDate', 'period', 'link', 'finalLink'], axis=1)
     cols = qis_df.columns.drop(['date', 'fillingDate'])  # pick every column except for date
     qis_df[cols] = qis_df[cols].apply(pd.to_numeric, errors='coerce')
-    qis_df.to_pickle(ticker + '_qis.pkl')
+
 
     bs_url = 'https://financialmodelingprep.com/api/v3/balance-sheet-statement/' + ticker + '?period=quarter&apikey=c8cd456174e73a2fc87b2ec7bb4744f6'
     bs_dict = get_jsonparsed_data(bs_url)  # dictionary of balance sheet
@@ -29,7 +38,7 @@ for ticker in companies:
     bs_df = bs_df.drop(['symbol', 'acceptedDate', 'period', 'link', 'finalLink'], axis=1)
     cols = bs_df.columns.drop(['date', 'fillingDate'])  # pick every column except for date
     bs_df[cols] = bs_df[cols].apply(pd.to_numeric, errors='coerce')
-    bs_df.to_pickle(ticker + '_bs.pkl')
+
 
     cf_url = 'https://financialmodelingprep.com/api/v3/cash-flow-statement/' + ticker + '?period=quarter&apikey=c8cd456174e73a2fc87b2ec7bb4744f6'
     cf_dict = get_jsonparsed_data(cf_url)  # dictionary of cash flow
@@ -37,7 +46,7 @@ for ticker in companies:
     cf_df = cf_df.drop(['symbol', 'acceptedDate', 'period', 'link', 'finalLink'], axis=1)
     cols = cf_df.columns.drop(['date', 'fillingDate'])  # pick every column except for date
     cf_df[cols] = cf_df[cols].apply(pd.to_numeric, errors='coerce')
-    cf_df.to_pickle(ticker + '_cf.pkl')
+
 
 # ensure correct dates in data frames
 unix_qis = pd.to_datetime(qis_df['fillingDate']).astype('int64') / 10**9
@@ -66,8 +75,6 @@ history_df = company.history(interval='1d', start=oldest, end=latest)
 history_df = history_df.reset_index()  # create indices
 history_df = history_df.reindex(index=history_df.index[::-1])  # invert order of rows
 history_df = history_df.reset_index(drop=True)  # re-create indices, starting from 0 without keeping old
-history_df.to_pickle(ticker + '_prices.pkl')
-history_df = pd.read_pickle(ticker + '_prices.pkl')  # un-serialize price history
 unix_pd = history_df['Date'].astype('int64') / 10**9
 oldest_pdata = unix_pd.iloc[quarter_trim_index]  # already datetime64
 
@@ -115,4 +122,8 @@ for earnings_release in earnings_releases:
     else:
         break
 
-
+qis_df.to_pickle(ticker + '_qis.pkl')
+bs_df.to_pickle(ticker + '_bs.pkl')
+cf_df.to_pickle(ticker + '_cf.pkl')
+AvgVolume_TotalDividends.to_pickle(ticker + '_VolumeDividends.pkl')
+trading_evaluation.to_pickle(ticker + '_mrktcaps.pkl')
