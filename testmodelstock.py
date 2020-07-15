@@ -63,13 +63,15 @@ if quarter_trim_index < -1:  # trim financial data if oldest quarter is not rece
     bs_df = bs_df[:quarters + quarter_trim_index]
     cf_df = cf_df[:quarters + quarter_trim_index]
 
-qis_df['Avg. MrktCap'] = qis_df['date']
+
 earnings_releases = qis_df['fillingDate'].values.tolist()
 trading_days = history_df['Date'].apply(lambda x: x.strftime('%Y-%m-%d'))
 trading_days = trading_days.values.tolist()
 k = 1
 k_max = len(earnings_releases)
 prices = history_df.drop(['Date', 'Volume', 'Dividends', 'Stock Splits'], axis=1)
+trading_evaluation = prices[:quarters + quarter_trim_index]
+trading_evaluation.iloc[0] = np.nan * trading_evaluation.shape[1]  # no data for most recent quarter
 capital_exchange = history_df.drop(['Date', 'Open', 'High', 'Low', 'Close'], axis=1)
 capital_exchange['Stock Multiple'] = capital_exchange['Stock Splits'].map(stock_multiplier)  # adjust for stock splits
 
@@ -81,12 +83,12 @@ for earnings_release in earnings_releases:
         end_index = trading_days.index(end_date)
         shares_start_of_quarter = qis_df['weightedAverageShsOutDil'].iloc[k]  # number of shares is previous quarter
         price_range = prices[end_index:start_index+1]  # data frame of relevant pricing data
-        capital_range = capital_exchange[end_index:start_index+1]
+        capital_range = capital_exchange[end_index:start_index+1]  # data frame of relevant volume and dividend data
         market_caps = price_range.mul(shares_start_of_quarter*capital_range['Stock Multiple'], axis=0)
-        market_caps['Date'] = history_df['Date'][end_index:start_index+1]
-        #average = trading_range['Closing Market Cap'].mean()
-        print(market_caps.head())
+        price_averages = pd.DataFrame(market_caps.mean(axis=0)).T.values.tolist()  # returns a list of lists
+        trading_evaluation.iloc[k] = price_averages[0]  # need [0] because averages is a list of lists
         k = k+1
+
     else:
         break
 
