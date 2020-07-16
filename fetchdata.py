@@ -25,31 +25,37 @@ def stock_multiplier(stock_split):
 
 companies = ["AAPL"]  # "MSFT", "IBM", "V", "MA", "GOOGL", "TSLA", "NVDA", "INTC", "AMD", "AMZN", "UBER", "LYFT"]
 pickle.dump(companies, open("save.p", "wb"))
+refresh = False
 
 for ticker in companies:
-    qis_url = 'https://financialmodelingprep.com/api/v3/income-statement/' + \
-              ticker + '?period=quarter&apikey=c8cd456174e73a2fc87b2ec7bb4744f6'
-    qis_dict = get_jsonparsed_data(qis_url)  # dictionary of quarterly incomes statements
-    qis_df = pd.DataFrame(data=qis_dict)
-    qis_df = qis_df.drop(['symbol', 'acceptedDate', 'period', 'link', 'finalLink'], axis=1)
-    cols = qis_df.columns.drop(['date', 'fillingDate'])  # pick every column except for date
-    qis_df[cols] = qis_df[cols].apply(pd.to_numeric, errors='coerce')
+    if refresh:
+        qis_url = 'https://financialmodelingprep.com/api/v3/income-statement/' + \
+                  ticker + '?period=quarter&apikey=c8cd456174e73a2fc87b2ec7bb4744f6'
+        qis_dict = get_jsonparsed_data(qis_url)  # dictionary of quarterly incomes statements
+        qis_df = pd.DataFrame(data=qis_dict)
+        qis_df = qis_df.drop(['symbol', 'acceptedDate', 'period', 'link', 'finalLink'], axis=1)
+        cols = qis_df.columns.drop(['date', 'fillingDate'])  # pick every column except for date
+        qis_df[cols] = qis_df[cols].apply(pd.to_numeric, errors='coerce')
 
-    bs_url = 'https://financialmodelingprep.com/api/v3/balance-sheet-statement/' + \
-             ticker + '?period=quarter&apikey=c8cd456174e73a2fc87b2ec7bb4744f6'
-    bs_dict = get_jsonparsed_data(bs_url)  # dictionary of balance sheet
-    bs_df = pd.DataFrame(data=bs_dict)
-    bs_df = bs_df.drop(['symbol', 'acceptedDate', 'period', 'link', 'finalLink'], axis=1)
-    cols = bs_df.columns.drop(['date', 'fillingDate'])  # pick every column except for date
-    bs_df[cols] = bs_df[cols].apply(pd.to_numeric, errors='coerce')
+        bs_url = 'https://financialmodelingprep.com/api/v3/balance-sheet-statement/' + \
+                 ticker + '?period=quarter&apikey=c8cd456174e73a2fc87b2ec7bb4744f6'
+        bs_dict = get_jsonparsed_data(bs_url)  # dictionary of balance sheet
+        bs_df = pd.DataFrame(data=bs_dict)
+        bs_df = bs_df.drop(['symbol', 'acceptedDate', 'period', 'link', 'finalLink'], axis=1)
+        cols = bs_df.columns.drop(['date', 'fillingDate'])  # pick every column except for date
+        bs_df[cols] = bs_df[cols].apply(pd.to_numeric, errors='coerce')
 
-    cf_url = 'https://financialmodelingprep.com/api/v3/cash-flow-statement/' + \
-             ticker + '?period=quarter&apikey=c8cd456174e73a2fc87b2ec7bb4744f6'
-    cf_dict = get_jsonparsed_data(cf_url)  # dictionary of cash flow
-    cf_df = pd.DataFrame(data=cf_dict)
-    cf_df = cf_df.drop(['symbol', 'acceptedDate', 'period', 'link', 'finalLink'], axis=1)
-    cols = cf_df.columns.drop(['date', 'fillingDate'])  # pick every column except for date
-    cf_df[cols] = cf_df[cols].apply(pd.to_numeric, errors='coerce')
+        cf_url = 'https://financialmodelingprep.com/api/v3/cash-flow-statement/' + \
+                 ticker + '?period=quarter&apikey=c8cd456174e73a2fc87b2ec7bb4744f6'
+        cf_dict = get_jsonparsed_data(cf_url)  # dictionary of cash flow
+        cf_df = pd.DataFrame(data=cf_dict)
+        cf_df = cf_df.drop(['symbol', 'acceptedDate', 'period', 'link', 'finalLink'], axis=1)
+        cols = cf_df.columns.drop(['date', 'fillingDate'])  # pick every column except for date
+        cf_df[cols] = cf_df[cols].apply(pd.to_numeric, errors='coerce')
+    else:
+        qis_df = pd.read_pickle(ticker + '_qis.pkl')  # load financial data
+        bs_df = pd.read_pickle(ticker + '_bs.pkl')
+        cf_df = pd.read_pickle(ticker + '_cf.pkl')
 
     # ensure correct dates in data frames
     unix_qis = pd.to_datetime(qis_df['fillingDate']).astype('int64') / 10**9
@@ -65,39 +71,39 @@ for ticker in companies:
     limit = oldest.get(max(oldest))
     if limiting_doc == 'qis':
         quarters = len(qis_df['date'])  # most recent to oldest quarterly dates
+        oldest_pdate = qis_df['fillingDate'].iloc[-1]
     elif limiting_doc == 'cf':
         quarters = len(cf_df['date'])
+        oldest_pdate = cf_df['fillingDate'].iloc[-1]
     else:
         quarters = len(bs_df['date'])
+        oldest_pdate = bs_df['fillingDate'].iloc[-1]
 
     # get historical market data
-    oldest = qis_df['fillingDate'].iloc[-1]
+    oldest_pdate = qis_df['fillingDate'].iloc[-1]
     latest = date.today()  # the latest dated quarter
     company = yf.Ticker(ticker)  # get company info
-    history_df = company.history(interval='1d', start=oldest, end=latest)
+    history_df = company.history(interval='1d', start=oldest_pdate, end=latest)
     history_df = history_df.reset_index()  # create indices
     history_df = history_df.reindex(index=history_df.index[::-1])  # invert order of rows
     history_df = history_df.reset_index(drop=True)  # re-create indices, starting from 0 without keeping old
     unix_pd = history_df['Date'].astype('int64') / 10**9
     oldest_pdata = unix_pd.iloc[quarter_trim_index]  # already datetime64
 
-    while limit < oldest_pdata:  # price data does not go far back enough
-        quarter_trim_index = quarter_trim_index - 1  # want a more recent quarter
-        limit = unix_qis.iloc[quarter_trim_index]  # need oldest quarter to be more recent
-
-    if quarter_trim_index < -1:  # trim financial data if oldest quarter is not recent enough
+    if not oldest_qis == oldest_bs == oldest_cf:  # trim financial data if oldest quarter is not recent enough
         quarter_trim_index = quarter_trim_index + 1
         qis_df = qis_df[:quarters + quarter_trim_index]
         bs_df = bs_df[:quarters + quarter_trim_index]
         cf_df = cf_df[:quarters + quarter_trim_index]
 
     earnings_releases = qis_df['fillingDate'].values.tolist()
+
     trading_days = history_df['Date'].apply(lambda x: x.strftime('%Y-%m-%d'))
     trading_days = trading_days.values.tolist()
     k = 1
-    k_max = len(earnings_releases)
+    k_max = len(earnings_releases)-1  # max index
     prices = history_df.drop(['Date', 'Volume', 'Dividends', 'Stock Splits'], axis=1)
-    trading_evaluation = prices[:quarters + quarter_trim_index]
+    trading_evaluation = prices[:quarters]
     trading_evaluation.iloc[0] = np.nan * trading_evaluation.shape[1]  # no data for most recent quarter
     capital_exchange = history_df.drop(['Open', 'High', 'Low', 'Close'], axis=1)
     capital_exchange['Stock Multiple'] = capital_exchange['Stock Splits'].map(stock_multiplier)  # adjust for stock
@@ -107,7 +113,7 @@ for ticker in companies:
     AvgVolume_TotalDividends.iloc[0] = np.nan * AvgVolume_TotalDividends.shape[1]  # no data for most recent quarter
 
     for earnings_release in earnings_releases:
-        if k+2 <= k_max:
+        if k <= k_max:
             starting_date = earnings_releases[k]  # the earnings release date of previous quarter
             end_date = earnings_release  # release date of next quarter's earnings
             start_index = trading_days.index(starting_date)
@@ -122,10 +128,13 @@ for ticker in companies:
                 shares_start_of_quarter * capital_range['Stock Multiple'], axis=0)
             AvgVolume_TotalDividends.loc[k, 'Volume'] = capital_range.loc[:, 'Volume'].mean(axis=0)
             AvgVolume_TotalDividends.loc[k, 'Dividends'] = capital_range.loc[:, 'Dividends Paid'].sum()
+
             k = k+1
         else:
             break
 
+    AvgVolume_TotalDividends.loc[:, 'date'] = qis_df['date']
+    trading_evaluation.loc[:, 'date'] = qis_df['date']
     qis_df.to_pickle(ticker + '_qis.pkl')
     bs_df.to_pickle(ticker + '_bs.pkl')
     cf_df.to_pickle(ticker + '_cf.pkl')

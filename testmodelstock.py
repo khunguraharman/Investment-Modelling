@@ -21,12 +21,8 @@ for ticker in companies:
                                                                                 axis=0)
     features1.loc[:, 'debt_equity'] = bs_df.loc[:, 'totalLiabilities'].div(bs_df.loc[:, 'totalStockholdersEquity'],
                                                                            axis=0)
-
-    #print(features1.loc[:, ['Current Ratio', 'Quick Ratio', 'Cash Ratio', 'debt_equity']])
-
     cf_df = pd.read_pickle(ticker + '_cf.pkl')
-    features2 = cf_df.loc[:, ['netCashProvidedByOperatingActivities', 'netCashUsedForInvestingActivites',
-                              'commonStockIssued', 'commonStockRepurchased', 'dividendsPaid']]
-    print(cf_df.loc[:, ['netCashProvidedByOperatingActivities']])
+    features2 = cf_df.loc[:, ['commonStockIssued', 'commonStockRepurchased', 'dividendsPaid', 'freeCashFlow']]
     AvgVolume_TotalDividends = pd.read_pickle(ticker + '_VolumeDividends.pkl')
+    print(AvgVolume_TotalDividends)
     trading_evaluation = pd.read_pickle(ticker + '_mrktcaps.pkl')
