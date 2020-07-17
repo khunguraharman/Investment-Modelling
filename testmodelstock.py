@@ -3,7 +3,6 @@ import tensorflow as tf
 import pandas as pd
 import numpy as np
 import pickle
-
 pd.options.mode.chained_assignment = None  # default='warn'
 
 companies = pickle.load(open("save.p", "rb"))
@@ -21,8 +20,18 @@ for ticker in companies:
                                                                                 axis=0)
     features1.loc[:, 'debt_equity'] = bs_df.loc[:, 'totalLiabilities'].div(bs_df.loc[:, 'totalStockholdersEquity'],
                                                                            axis=0)
+    features = features1
     cf_df = pd.read_pickle(ticker + '_cf.pkl')
     features2 = cf_df.loc[:, ['commonStockIssued', 'commonStockRepurchased', 'dividendsPaid', 'freeCashFlow']]
+    cols = features2.columns
+    features[cols] = features2
+
     AvgVolume_TotalDividends = pd.read_pickle(ticker + '_VolumeDividends.pkl')
-    print(AvgVolume_TotalDividends)
+    cols = AvgVolume_TotalDividends.columns
+    features[cols] = AvgVolume_TotalDividends
+
     trading_evaluation = pd.read_pickle(ticker + '_mrktcaps.pkl')
+
+    normalize_features = features.drop(['date', 'Current Ratio', 'Quick Ratio', 'Cash Ratio', 'debt_equity'], axis=1)  # pick every column except for date
+    print(normalize_features)
+
