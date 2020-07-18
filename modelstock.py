@@ -17,7 +17,7 @@ companies = pickle.load(open("save.p", "rb"))
 for ticker in companies:
     # Every feature normalized by market cap
     qis_df = pd.read_pickle(ticker + '_qis.pkl')  # load financial data
-    features1 = qis_df.loc[:, ['revenue', 'grossProfit', 'operatingIncome', 'incomeTaxExpense', 'netIncome']]
+    features1 = qis_df.copy().loc[:, ['revenue', 'grossProfit', 'operatingIncome', 'incomeTaxExpense', 'netIncome']]
     cf_df = pd.read_pickle(ticker + '_cf.pkl')
     cols = cf_df.loc[:, ['commonStockIssued', 'commonStockRepurchased', 'dividendsPaid', 'freeCashFlow']].columns
     features1[cols] = cf_df.loc[:, ['commonStockIssued', 'commonStockRepurchased', 'dividendsPaid', 'freeCashFlow']]
@@ -35,17 +35,10 @@ for ticker in companies:
                                                                            axis=0)
     # Normalize volume
     features3 = pd.read_pickle(ticker + '_VolumeDividends.pkl').drop(['Dividends', 'date'], axis=1)
-    shares = qis_df.loc[:, 'weightedAverageShsOutDil']  # number of shares is previous quarter
-    features3 = features3.div(shares, axis=0)
 
     # Normalize with market cap
-    trading_evaluation = pd.read_pickle(ticker + '_mrktcaps.pkl')
-    Close = features1.div(trading_evaluation.Close, axis=0)
-    High = features1.div(trading_evaluation.High, axis=0)
-    Open = features1.div(trading_evaluation.Open, axis=0)
-    Low = features1.div(trading_evaluation.Low, axis=0)
-    features = [Open, Close, High, Low, features2, features3]
+    features = [features1, features2, features3]
     features = pd.concat(features, axis=1)
-    reference = features
-    features.columns = list(range(0, features.shape[1], 1))
+    features.to_pickle(ticker + '_features.pkl')
+
 

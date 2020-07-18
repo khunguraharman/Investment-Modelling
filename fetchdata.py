@@ -80,7 +80,7 @@ for ticker in companies:
         oldest_pdate = bs_df['fillingDate'].iloc[-1]
 
     # get historical market data
-    oldest_pdate = qis_df['fillingDate'].iloc[-1]
+    oldest_pdate = qis_df.copy()['fillingDate'].iloc[-1]
     latest = date.today()  # the latest dated quarter
     company = yf.Ticker(ticker)  # get company info
     history_df = company.history(interval='1d', start=oldest_pdate, end=latest)
@@ -116,7 +116,7 @@ for ticker in companies:
         end_date = earnings_releases[k-1]  # release date of next quarter's earnings
         start_index = trading_days.index(starting_date)
         end_index = trading_days.index(end_date)
-        shares_start_of_quarter = qis_df['weightedAverageShsOutDil'].iloc[k]  # number of shares is previous quarter
+        shares_start_of_quarter = qis_df.copy()['weightedAverageShsOutDil'].iloc[k]  # number of shares is previous quarter
         price_range = prices.copy()[end_index:start_index+1]
         avg_prices.iloc[k] = pd.DataFrame(price_range.mean(axis=0)).T.values.tolist()[0]  # data frame of relevant
         # pricing data
