@@ -118,9 +118,10 @@ for ticker in companies:
         end_index = trading_days.index(end_date)
         shares_start_of_quarter = qis_df['weightedAverageShsOutDil'].iloc[k]  # number of shares is previous quarter
         price_range = prices.copy()[end_index:start_index+1]
-        new = pd.DataFrame(price_range.mean(axis=0)).T.values.tolist()[0] # data frame of relevant pricing data
-        avg_prices.loc[k, :] = new
-        capital_range = capital_exchange.copy()[end_index:start_index+1]  # data frame of relevant volume and dividend data
+        avg_prices.iloc[k] = pd.DataFrame(price_range.mean(axis=0)).T.values.tolist()[0]  # data frame of relevant
+        # pricing data
+        capital_range = capital_exchange.copy()[end_index:start_index+1]  # data frame of relevant volume and
+        # dividend data
         market_caps = price_range.copy().mul(shares_start_of_quarter*capital_range['Stock Multiple'], axis=0)
         trading_evaluation.iloc[k] = pd.DataFrame(market_caps.mean(axis=0)).T.values.tolist()[0]  # returns a
         # list of lists
