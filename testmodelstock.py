@@ -1,5 +1,9 @@
-from datetime import date
-import tensorflow as tf
+from keras.models import Sequential
+from keras.layers import Conv2D
+from keras.layers import MaxPool2D
+from keras.layers import Flatten
+from keras.layers import Dense
+from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
 import numpy as np
 import pickle
@@ -48,4 +52,7 @@ for ticker in companies:
     features = pd.concat(features, axis=1)
     reference = features
     features.columns = list(range(0, features.shape[1], 1))
+    features.to_pickle(ticker + '_features.pkl')
+
+
 

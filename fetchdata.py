@@ -102,7 +102,9 @@ for ticker in companies:
     trading_days = trading_days.values.tolist()
     k = 1
     k_max = len(earnings_releases)-1  # max index
-    prices = history_df.drop(['Date', 'Volume', 'Dividends', 'Stock Splits'], axis=1)
+    prices = history_df.drop(['Date', 'Volume', 'Stock Splits', 'Dividends'], axis=1)
+    avg_prices = prices[:quarters]
+    avg_prices.iloc[0] = np.nan * avg_prices.shape[1]
     trading_evaluation = prices[:quarters]
     trading_evaluation.iloc[0] = np.nan * trading_evaluation.shape[1]  # no data for most recent quarter
     capital_exchange = history_df.drop(['Open', 'High', 'Low', 'Close'], axis=1)
@@ -112,31 +114,29 @@ for ticker in companies:
     AvgVolume_TotalDividends = AvgVolume_TotalDividends.drop(['Date', 'Stock Multiple', 'Stock Splits'], axis=1)
     AvgVolume_TotalDividends.iloc[0] = np.nan * AvgVolume_TotalDividends.shape[1]  # no data for most recent quarter
 
-    for earnings_release in earnings_releases:
-        if k <= k_max:
-            starting_date = earnings_releases[k]  # the earnings release date of previous quarter
-            end_date = earnings_release  # release date of next quarter's earnings
-            start_index = trading_days.index(starting_date)
-            end_index = trading_days.index(end_date)
-            shares_start_of_quarter = qis_df['weightedAverageShsOutDil'].iloc[k]  # number of shares is previous quarter
-            price_range = prices[end_index:start_index+1]  # data frame of relevant pricing data
-            capital_range = capital_exchange[end_index:start_index+1]  # data frame of relevant volume and dividend data
-            market_caps = price_range.mul(shares_start_of_quarter*capital_range['Stock Multiple'], axis=0)
-            price_averages = pd.DataFrame(market_caps.mean(axis=0)).T.values.tolist()  # returns a list of lists
-            trading_evaluation.iloc[k] = price_averages[0]  # need [0] because averages is a list of lists
-            capital_range.loc[:, 'Dividends Paid'] = capital_range.loc[:, 'Dividends'].mul(
-                shares_start_of_quarter * capital_range['Stock Multiple'], axis=0)
-            AvgVolume_TotalDividends.loc[k, 'Volume'] = capital_range.loc[:, 'Volume'].mean(axis=0)
-            AvgVolume_TotalDividends.loc[k, 'Dividends'] = capital_range.loc[:, 'Dividends Paid'].sum()
-
-            k = k+1
-        else:
-            break
+    while k <= k_max:
+        starting_date = earnings_releases[k]  # the earnings release date of previous quarter
+        end_date = earnings_releases[k-1]  # release date of next quarter's earnings
+        start_index = trading_days.index(starting_date)
+        end_index = trading_days.index(end_date)
+        shares_start_of_quarter = qis_df['weightedAverageShsOutDil'].iloc[k]  # number of shares is previous quarter
+        price_range = prices[end_index:start_index+1]  # data frame of relevant pricing data
+        avg_prices.iloc[k] = pd.DataFrame(price_range.mean(axis=0)).T.values.tolist()[0]
+        capital_range = capital_exchange[end_index:start_index+1]  # data frame of relevant volume and dividend data
+        market_caps = price_range.mul(shares_start_of_quarter*capital_range['Stock Multiple'], axis=0)
+        trading_evaluation.iloc[k] = pd.DataFrame(market_caps.mean(axis=0)).T.values.tolist()[0]  # returns a
+        # list of lists
+        capital_range.loc[:, 'Dividends Paid'] = capital_range.loc[:, 'Dividends'].mul(
+            shares_start_of_quarter * capital_range['Stock Multiple'], axis=0)
+        AvgVolume_TotalDividends.loc[k, 'Volume'] = capital_range.loc[:, 'Volume'].mean(axis=0)
+        AvgVolume_TotalDividends.loc[k, 'Dividends'] = capital_range.loc[:, 'Dividends Paid'].sum()
+        k = k+1
 
     AvgVolume_TotalDividends.loc[:, 'date'] = qis_df['date']
     trading_evaluation.loc[:, 'date'] = qis_df['date']
     qis_df.to_pickle(ticker + '_qis.pkl')
     bs_df.to_pickle(ticker + '_bs.pkl')
     cf_df.to_pickle(ticker + '_cf.pkl')
+    avg_prices.to_pickle(ticker + 'avgprices.pkl')
     AvgVolume_TotalDividends.to_pickle(ticker + '_VolumeDividends.pkl')
     trading_evaluation.to_pickle(ticker + '_mrktcaps.pkl')
