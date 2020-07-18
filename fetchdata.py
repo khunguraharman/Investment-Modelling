@@ -6,7 +6,7 @@ from datetime import date
 import yfinance as yf
 import pickle
 import datetime as dt
-pd.options.mode.chained_assignment = None  # default='warn'
+# pd.options.mode.chained_assignment = None  # default='warn'
 
 
 def get_jsonparsed_data(url):  # recieve content of the URL, parse is as JSON and return a dictionary
@@ -102,17 +102,14 @@ for ticker in companies:
     trading_days = trading_days.values.tolist()
     k = 1
     k_max = len(earnings_releases)-1  # max index
-    prices = history_df.drop(['Date', 'Volume', 'Stock Splits', 'Dividends'], axis=1)
-    avg_prices = prices[:quarters]
-    avg_prices.iloc[0] = np.nan * avg_prices.shape[1]
-    trading_evaluation = prices[:quarters]
-    trading_evaluation.iloc[0] = np.nan * trading_evaluation.shape[1]  # no data for most recent quarter
-    capital_exchange = history_df.drop(['Open', 'High', 'Low', 'Close'], axis=1)
+    prices = history_df.copy().drop(['Date', 'Volume', 'Stock Splits', 'Dividends'], axis=1)
+    avg_prices = prices.copy()[:quarters]
+    trading_evaluation = prices.copy()[:quarters]
+    capital_exchange = history_df.copy().drop(['Open', 'High', 'Low', 'Close'], axis=1)
     capital_exchange['Stock Multiple'] = capital_exchange['Stock Splits'].map(stock_multiplier)  # adjust for stock
     # splits
-    AvgVolume_TotalDividends = capital_exchange[:quarters + quarter_trim_index]
+    AvgVolume_TotalDividends = capital_exchange.copy()[:quarters + quarter_trim_index]
     AvgVolume_TotalDividends = AvgVolume_TotalDividends.drop(['Date', 'Stock Multiple', 'Stock Splits'], axis=1)
-    AvgVolume_TotalDividends.iloc[0] = np.nan * AvgVolume_TotalDividends.shape[1]  # no data for most recent quarter
 
     while k <= k_max:
         starting_date = earnings_releases[k]  # the earnings release date of previous quarter
@@ -120,10 +117,11 @@ for ticker in companies:
         start_index = trading_days.index(starting_date)
         end_index = trading_days.index(end_date)
         shares_start_of_quarter = qis_df['weightedAverageShsOutDil'].iloc[k]  # number of shares is previous quarter
-        price_range = prices[end_index:start_index+1]  # data frame of relevant pricing data
-        avg_prices.iloc[k] = pd.DataFrame(price_range.mean(axis=0)).T.values.tolist()[0]
-        capital_range = capital_exchange[end_index:start_index+1]  # data frame of relevant volume and dividend data
-        market_caps = price_range.mul(shares_start_of_quarter*capital_range['Stock Multiple'], axis=0)
+        price_range = prices.copy()[end_index:start_index+1]
+        new = pd.DataFrame(price_range.mean(axis=0)).T.values.tolist()[0] # data frame of relevant pricing data
+        avg_prices.loc[k, :] = new
+        capital_range = capital_exchange.copy()[end_index:start_index+1]  # data frame of relevant volume and dividend data
+        market_caps = price_range.copy().mul(shares_start_of_quarter*capital_range['Stock Multiple'], axis=0)
         trading_evaluation.iloc[k] = pd.DataFrame(market_caps.mean(axis=0)).T.values.tolist()[0]  # returns a
         # list of lists
         capital_range.loc[:, 'Dividends Paid'] = capital_range.loc[:, 'Dividends'].mul(
@@ -132,6 +130,9 @@ for ticker in companies:
         AvgVolume_TotalDividends.loc[k, 'Dividends'] = capital_range.loc[:, 'Dividends Paid'].sum()
         k = k+1
 
+    avg_prices.iloc[0] = np.nan * avg_prices.shape[1]
+    trading_evaluation.iloc[0] = np.nan * trading_evaluation.shape[1]  # no data for most recent quarter
+    AvgVolume_TotalDividends.iloc[0] = np.nan * AvgVolume_TotalDividends.shape[1]  # no data for most recent quarter
     AvgVolume_TotalDividends.loc[:, 'date'] = qis_df['date']
     trading_evaluation.loc[:, 'date'] = qis_df['date']
     qis_df.to_pickle(ticker + '_qis.pkl')
