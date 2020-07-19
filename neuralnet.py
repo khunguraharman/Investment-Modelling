@@ -3,7 +3,7 @@ from tensorflow import keras
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Activation, Dense
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.metrics import categorical_crossentropy
+from tensorflow.keras.metrics import MeanSquaredError
 from keras.layers import Dense
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
@@ -20,7 +20,10 @@ for ticker in companies:
     train_samples = np.array(features.iloc[1:])
     train_labels, train_samples = shuffle(train_labels, train_samples)
     scaler = StandardScaler()
-    scaled_train_samples = scaler.fit_transform(train_samples.reshape(-1, 1))
-    #model = Sequential([Dense(units=)])
-
+    scaled_train_samples = scaler.fit_transform(train_samples)
+    model = Sequential([Dense(units=16, input_shape=(14,), activation='relu'),
+                        Dense(units=4, activation='linear'),
+                        ])
+    model.compile(optimizer=Adam(learning_rate=0.0001), loss='MeanSquaredError', metrics=['accuracy'])
+    model.fit(x=scaled_train_samples, y=train_labels, batch_size=10, epochs=7, shuffle=True, verbose=2)
 
