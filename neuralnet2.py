@@ -13,29 +13,32 @@ import pickle
 
 companies = pickle.load(open("save.p", "rb"))
 ticker = companies[0]
-neurons = [8, 16]
+
 dropouts = [0.2, 0.3, 0.4, 0.5]
 features = pd.read_pickle(ticker + '_features.pkl')  # load financial data
 #features = features.drop(['grossProfit', 'operatingIncome', 'commonStockIssued', 'commonStockRepurchased',
                           #'dividendsPaid'], axis=1)
-features = features.drop(['Quick Ratio', 'Cash Ratio', 'debt_equity', 'commonStockIssued', 'commonStockRepurchased',
-                           'dividendsPaid'], axis=1)
-labels = pd.read_pickle(ticker + 'avgprices.pkl')
+features = features.drop(['grossProfit', 'Current Ratio', 'Quick Ratio', 'Cash Ratio', 'debt_equity',
+                           'Volume', 'netIncome'], axis=1)
+labels = pd.read_pickle(ticker + '_mrktcaps.pkl')
+labels = labels.drop(['date'], axis=1)
 labels = np.array(labels.iloc[1:])
 samples = np.array(features.iloc[1:])
-scaler = StandardScaler()
-scaled_samples = scaler.fit_transform(samples)
-train_samples, test_samples, train_labels, test_labels = train_test_split(scaled_samples, labels, test_size=0.33,
-                                                                          random_state=42)
 
-for neuron in neurons:
-    for rate in dropouts:
-        print(neuron)
-        print(rate)
-        model = Sequential([Dense(units=neuron, input_shape=(8,), activation='relu'),
-                            Dropout(rate),
-                            Dense(units=4, activation='linear'),
-                            ])
-        model.compile(optimizer=Adam(learning_rate=0.00000001), loss='MeanSquaredError', metrics=['accuracy'])
-        model.fit(x=train_samples, y=train_labels, batch_size=10, epochs=5, shuffle=True, verbose=2)
+train_samples, test_samples, train_labels, test_labels = train_test_split(samples, labels, test_size=0.1,
+                                                                          random_state=42)
+scaler = StandardScaler()
+train_samples = scaler.fit_transform(train_samples)
+test_samples = scaler.fit_transform(test_samples)
+
+
+for rate in dropouts:
+    print(rate)
+    model = Sequential([Dense(units=8, input_shape=(7,), activation='relu'),
+                        Dropout(rate),
+                        Dense(units=4, activation='linear'),
+                        ])
+    model.compile(optimizer=Adam(learning_rate=0.00000001), loss='MeanSquaredError', metrics=['accuracy'])
+    model.fit(x=train_samples, y=train_labels, batch_size=6, epochs=11, validation_data=(test_samples, test_labels),
+              verbose=2)
 
