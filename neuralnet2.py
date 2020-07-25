@@ -14,7 +14,7 @@ import pickle
 companies = pickle.load(open("save.p", "rb"))
 ticker = companies[0]
 
-dropouts = [0.2, 0.3, 0.4, 0.5]
+dropouts = [0.5]
 features = pd.read_pickle(ticker + '_features.pkl')  # load financial data
 #features = features.drop(['grossProfit', 'operatingIncome', 'commonStockIssued', 'commonStockRepurchased',
                           #'dividendsPaid'], axis=1)
